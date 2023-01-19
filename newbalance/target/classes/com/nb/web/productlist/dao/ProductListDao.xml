@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nb.web.productlist.dao.ProductListDao">
+
+<!--1. List<ProductListDTO> selectProductList(String category_code, String gender) -->
+<select id="selectProductList" resultType="com.nb.web.productlist.dto.ProductListDTO">
+
+SELECT product.pd_code pd_code, substr(product.pd_code,9,2) color , category_code , pd_name , pd_price , pd_memberonly , pd_mincount ,pd_feet
+FROM product join product_detail on product.pd_code = product_detail.pd_code
+            	<choose>
+            	<when test="'${param1}'.length() == 1">
+            		WHERE substr(product.pd_code,2,1) = '${param1}' AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = '${param2}')
+            	</when>
+            	<otherwise>
+            		WHERE substr(product.pd_code,2,3) = '${param1}' AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = '${param2}')
+            	</otherwise>
+            	</choose>
+</select>
+											
+<!-- 2. List<ProductImgDTO>  seletProductImg(String pdCode) -->
+<select id="seletProductImg" resultType="com.nb.web.productlist.dto.ProductImgDTO">
+<![CDATA[
+SELECT t.row_num imgRowNumber, t.pd_code pd_code, t.img_url img_url 
+FROM( 
+            SELECT ROW_NUMBER() OVER(PARTITION BY pd_code ORDER BY pd_code) row_num, pd_code, img_url
+            FROM product_image 
+            WHERE pd_code = #{ pdCode }
+          )t 
+WHERE t.row_num <= 5
+ORDER BY imgRowNumber ASC 
+]]>
+</select>
+
+<!-- 3. List<ProductSizeStockDTO> selectProductSizeStock(String pdCode) -->
+<select id="selectProductSizeStock" resultType="com.nb.web.productlist.dto.ProductSizeStockDTO">
+SELECT product_stock.pd_code pd_code, size_list.size_code size_code, stock_count , sz
+FROM product join product_stock on product.pd_code = product_stock.pd_code 
+                     join size_list on product_stock.size_code = size_list.size_code 
+ WHERE product_stock.pd_code = #{pdCode}
+</select>
+
+
+
+<!-- 4. List<ProductCategoryDTO> category( String category_code, String gender ) -->
+<select id="category" resultType="com.nb.web.productlist.dto.ProductCategoryDTO">
+SELECT DISTINCT(minor_sort) minor_sort,  category.category_code category_code
+FROM category join product on product.category_code = category.category_code
+		<choose>
+			<when test=" '${param2}'.equals('K')">
+                  WHERE substr(category.category_code,1,1) = substr( '${param1}' , 1,1) AND ( substr(pd_code,1,1) = '${param2}' )
+			</when>
+			<otherwise>
+                  WHERE substr(category.category_code,1,1) = substr( '${param1}' , 1,1) AND ( substr(pd_code,1,1) = 'U' OR substr(pd_code,1,1) = '${param2}' )
+     		</otherwise>
+     	</choose>
+ ORDER BY category.category_code
+</select>
+
+
+<!-- 5. ProductReviewDTO selectProductReview(String category_code,String gender) -->
+<select id="selectProductReview" resultType="com.nb.web.productlist.dto.ProductReviewDTO">
+SELECT product.pd_code pdCode, count(DISTINCT(product.pd_code)) countPOfReview , avg(rev_starscore) avgReview 
+FROM product join order_info on product.pd_code = order_info.pd_code
+                      join order_list on order_info.ord_code = order_list.ord_code
+                      join user_info on user_info.user_code = order_list.user_code
+                      join review on review.user_code = user_info.user_code
+WHERE product.pd_code = #{pdCode}
+GROUP BY product.pd_code
+</select>
+
+
+<!-- 6. List<ProductSizeStockDTO> selectSizeCategory(String category_code, String gender) -->
+<select id="selectSizeCategory" resultType="com.nb.web.productlist.dto.ProductSizeStockDTO">
+SELECT DISTINCT(sz) sz
+FROM  product join product_stock on product.pd_code = product_stock.pd_code
+           				join size_list on product_stock.size_code = size_list.size_code
+		<choose>
+			<when test=" '#{param2}'.equals('k') ">
+					<choose>
+						<when test=" '#{param1}'.length() == 1">
+                     		WHERE substr(product.pd_code,2,1) = #{param1} AND ( substr(product.pd_code,1,1) = #{param2}) 
+                  		</when>
+                  		<otherwise>
+                     		WHERE substr(product.pd_code,2,3) = #{param1} AND ( substr(product.pd_code,1,1) = #{param2}) 
+                  		</otherwise>
+            		</choose>
+        	</when>
+        	<otherwise> 
+        			<choose>
+        				<when test=" '#{param1}'.length() == 1">
+                     		WHERE substr(product.pd_code,2,1) = #{param1} AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = #{param2}) 
+						</when>
+						<otherwise>
+                    		 WHERE substr(product.pd_code,2,3) = #{param1} AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = #{param2}) 
+            			</otherwise>
+            		</choose>
+            </otherwise>
+         </choose>
+ORDER BY sz
+</select>
+
+
+<!-- 7. List<ProductListDTO>selectFeet(String category_code, String gender) -->
+<select id="selectFeet" resultType="com.nb.web.productlist.dto.ProductListDTO">
+SELECT Distinct(pd_feet) 
+FROM product join product_detail on product.pd_code = product_detail.pd_code 
+		<choose>
+			<when test=" '#{param2}'.equals('k') ">
+					<choose>
+						<when test=" '#{param1}'.length() == 1">
+                     		WHERE substr(product.pd_code,2,1) = #{param1} AND ( substr(product.pd_code,1,1) = #{param2}) 
+                  		</when>
+                  		<otherwise>
+                     		WHERE substr(product.pd_code,2,3) = #{param1} AND ( substr(product.pd_code,1,1) = #{param2}) 
+                  		</otherwise>
+            		</choose>
+        	</when>
+        	<otherwise> 
+        			<choose>
+        				<when test=" '#{param1}'.length() == 1">
+                     		WHERE substr(product.pd_code,2,1) = #{param1} AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = #{param2}) 
+						</when>
+						<otherwise>
+                    		 WHERE substr(product.pd_code,2,3) = #{param1} AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = #{param2}) 
+            			</otherwise>
+            		</choose>
+            </otherwise>
+         </choose>
+</select>
+
+<!-- 8. List<ProductColorDTO>selectColor(String category_code, String gender) -->
+<select id="selectColor" resultType="com.nb.web.productlist.dto.ProductColorDTO">
+SELECT DISTINCT( substr(product.pd_code,9,2)) color_code, color_url 
+FROM product join product_image on product.pd_code = product_image.pd_code 
+             		join color on product_image.color_code = color.color_code 
+		<choose>
+			<when test=" '#{param2}'.equals('k') ">
+					<choose>
+						<when test=" '#{param1}'.length() == 1">
+                     		WHERE substr(product.pd_code,2,1) = #{param1} AND ( substr(product.pd_code,1,1) = #{param2}) 
+                  		</when>
+                  		<otherwise>
+                     		WHERE substr(product.pd_code,2,3) = #{param1} AND ( substr(product.pd_code,1,1) = #{param2}) 
+                  		</otherwise>
+            		</choose>
+        	</when>
+        	<otherwise> 
+        			<choose>
+        				<when test=" '#{param1}'.length() == 1">
+                     		WHERE substr(product.pd_code,2,1) = #{param1} AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = #{param2}) 
+						</when>
+						<otherwise>
+                    		 WHERE substr(product.pd_code,2,3) = #{param1} AND ( substr(product.pd_code,1,1) = 'U' OR substr(product.pd_code,1,1) = #{param2}) 
+            			</otherwise>
+            		</choose>
+            </otherwise>
+         </choose>
+</select>
+
+
+
+
+</mapper>

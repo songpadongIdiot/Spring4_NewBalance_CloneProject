@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.nb.web.productlist.dao.ProductModalDao">
+	
+	<!-- 상품 정보 -->
+	<!-- public ProductDTO selectProduct(String pdCode) -->
+	<select id="selectProduct" resultType="com.nb.web.productlist.dto.ProductDTO" parameterType="string">
+		SELECT pd_code pdCode, category_code categoryCode, pd_name pdName, pd_price pdPrice, pd_memberonly pdMemberonly
+				, pd_mincount pdMincount, pd_country pdCountry, pd_from pdFrom, pd_date pdDate, pd_material pdMaterial
+				, pd_feet pdFeet, pd_release pdRelease, pd_feature pdFeature, img_url imgUrl
+		FROM ( 
+				SELECT p.pd_code, category_code, pd_name, pd_price, pd_memberonly, pd_mincount 
+						, pd_country, pd_from, pd_date, pd_material, pd_feet, pd_release, pd_feature 
+						, ROW_NUMBER() OVER(PARTITION BY p.pd_code ORDER BY img_seq ASC) seq, img_url 
+				FROM product p join product_detail d on p.pd_code = d.pd_code 
+			     		  				join product_image i on p.pd_code = i.pd_code
+		)t 
+		WHERE seq = 1 and pd_code = #{ pdCode }
+	</select>
+
+	<!-- 상품 이미지 리스트 -->
+	<!-- ArrayList<ProductImageDTO> selectImage(String pdCode) -->
+	<select id="selectImage" resultType="com.nb.web.productlist.dto.ProductImgDTO">
+		SELECT img_url
+		FROM product_image 
+		WHERE pd_code = #{ pdCode }
+		ORDER BY img_seq
+	</select>
+	
+	<!-- 상품 사이즈 리스트 -->
+	<!-- public ArrayList<ProductSizeDTO> selectSize(String pdCode) -->
+	<select id="selectSize" resultType="com.nb.web.productlist.dto.ProductSizeStockDTO">
+		SELECT s.size_code , stock_count , sz 
+		FROM product p join product_stock s on p.pd_code = s.pd_code
+					  			join size_list l on s.size_code = l.size_code 
+		WHERE p.pd_code = #{ pdCode }
+	</select>
+
+
+	<!-- 다른 컬러 리스트 -->
+	<!-- ArrayList<ProductColorDTO> diffColorProduct(String pdCode) -->
+	<select id="diffColorProduct" resultType="com.nb.web.productlist.dto.ProductModalColor">
+		SELECT pd_code pdCode, img_url imgUrl, trim(TO_CHAR(color_code, '09')) colorCode, color, pd_name pdName, pd_price pdPrice 
+		FROM ( 
+				SELECT p.pd_code, c.color_code, color, pd_name, pd_price 
+				        , ROW_NUMBER() OVER(PARTITION BY p.pd_code ORDER BY img_seq ASC) seq, img_url  
+			 	FROM product p join product_image i on p.pd_code = i.pd_code 
+				                  		join color c on i.color_code = c.color_code 
+		)t 
+		WHERE seq = 1 and substr(pd_code, 1, 8) = substr(#{ pdCode }, 1, 8)
+	</select>
+
+	
+	
+	
+</mapper>
+

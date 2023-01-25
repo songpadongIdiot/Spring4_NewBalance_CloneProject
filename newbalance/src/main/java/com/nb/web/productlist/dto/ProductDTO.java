@@ -1,7 +1,10 @@
 package com.nb.web.productlist.dto;
 
+import lombok.Data;
+
+@Data
 public class ProductDTO {
-	
+
 	private String pdCode;
 	private String categoryCode;
 	private String pdName;
@@ -16,7 +19,7 @@ public class ProductDTO {
 	private String pdRelease;
 	private String pdFeature;
 	private String imgUrl;  // 첫 번째 이미지 저장
-	
+/*		
 	
 	// 생성자
 	public ProductDTO() {
@@ -139,5 +142,5 @@ public class ProductDTO {
 				+ ", pdFrom=" + pdFrom + ", pdDate=" + pdDate + ", pdMaterial=" + pdMaterial + ", pdFeet=" + pdFeet
 				+ ", pdRelease=" + pdRelease + ", pdFeature=" + pdFeature + ", imgUrl=" + imgUrl + "]";
 	}
-	
+	*/
 }
